@@ -1,0 +1,7 @@
+bin/
+obj/
+release/
+/VeilSight.dll
+VeilSight.local.props
+*.user
+*.suo

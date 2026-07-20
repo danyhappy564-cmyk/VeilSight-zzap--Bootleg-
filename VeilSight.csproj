@@ -1,0 +1,93 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="VeilSight.local.props" Condition="Exists('VeilSight.local.props')" />
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>VeilSight</AssemblyName>
+    <RootNamespace>VeilSight</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <VersionPrefix>1.0.1</VersionPrefix>
+    <Version>$(VersionPrefix)</Version>
+    <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
+    <FileVersion>$(VersionPrefix).0</FileVersion>
+    <InformationalVersion>$(Version)</InformationalVersion>
+    <Deterministic>true</Deterministic>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SptRoot Condition="'$(SptRoot)' == '' And '$(SPT_ROOT)' != ''">$(SPT_ROOT)</SptRoot>
+    <DeployVeilSight Condition="'$(DeployVeilSight)' == ''">false</DeployVeilSight>
+    <Managed>$(SptRoot)\EscapeFromTarkov_Data\Managed</Managed>
+    <BepInExCore>$(SptRoot)\BepInEx\core</BepInExCore>
+    <SptPlugins>$(SptRoot)\BepInEx\plugins\spt</SptPlugins>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="BepInEx">
+      <HintPath>$(BepInExCore)\BepInEx.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(BepInExCore)\0Harmony.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(Managed)\Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Comfort">
+      <HintPath>$(Managed)\Comfort.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="spt-reflection">
+      <HintPath>$(SptPlugins)\spt-reflection.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(Managed)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(Managed)\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(Managed)\UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(Managed)\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(Managed)\UnityEngine.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="ValidateSptRoot" BeforeTargets="ResolveReferences"
+          Condition="'$(SptRoot)' == '' Or !Exists('$(SptRoot)\EscapeFromTarkov_Data\Managed\Assembly-CSharp.dll')">
+    <Error Text="Set SptRoot to a valid SPT installation using -p:SptRoot=&quot;C:\Path\To\SPT&quot;, the SPT_ROOT environment variable, or VeilSight.local.props." />
+  </Target>
+
+  <Target Name="GenerateVeilSightVersion" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <VeilSightVersionSource>$(IntermediateOutputPath)VeilSightVersion.g.cs</VeilSightVersionSource>
+      <VeilSightVersionText>namespace VeilSight%0A{%0A    internal static class BuildVersion%0A    {%0A        internal const string Value = &quot;$(VersionPrefix)&quot;%3B%0A    }%0A}</VeilSightVersionText>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(VeilSightVersionSource)" Lines="$(VeilSightVersionText)" Overwrite="true" Encoding="UTF-8" />
+    <ItemGroup>
+      <Compile Include="$(VeilSightVersionSource)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="CopyVeilSight" AfterTargets="Build" Condition="'$(DeployVeilSight)' == 'true'">
+    <MakeDir Directories="$(SptRoot)\BepInEx\plugins\VeilSight" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(SptRoot)\BepInEx\plugins\VeilSight" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

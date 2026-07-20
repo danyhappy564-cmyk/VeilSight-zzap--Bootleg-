@@ -1,0 +1,5 @@
+<Project>
+  <PropertyGroup>
+    <SptRoot>C:\Path\To\SPT</SptRoot>
+  </PropertyGroup>
+</Project>
