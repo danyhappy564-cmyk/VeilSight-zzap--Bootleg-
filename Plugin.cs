@@ -5,7 +5,7 @@ using UnityEngine;
 namespace VeilSight
 {
     [BepInPlugin("com.sherrifpowpow.veilsight", "VeilSight", BuildVersion.Value)]
-    [BepInDependency("com.SPT.core", "4.0.13")]
+    [BepInDependency("com.SPT.core", "4.1.0")]
     [BepInProcess("EscapeFromTarkov.exe")]
     public sealed class Plugin : BaseUnityPlugin
     {
