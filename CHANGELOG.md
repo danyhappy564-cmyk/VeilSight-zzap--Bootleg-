@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0 - 2026-09-11
+
+- Ported to SPT 4.1.5 (fork).
+- Verified the entire EFT surface against a real SPT 4.1.5 `Assembly-CSharp.dll`: `EnemyInfo.SetVisible(bool value)` — including the parameter name Harmony binds by — plus `EnemyInfo.Distance`/`.Person`/`.Owner`, `TacticalComboVisualController.LightMod`, `PlayerBones.WeaponRoot`, `LaserBeam`, `Player.FirearmController`, `EFT.EnvironmentEffect`, and `EFT.Weather`. Nothing was renamed, so no gameplay or patch code changed.
+- Raised the BepInEx dependency from `com.SPT.core` 4.0.13 to 4.1.0.
+- Defaulted `SptVersion` in the release packager to 4.1.5.
+- Added an `EnsureRealSptReflection` build check: building against a placeholder `spt-reflection.dll` (version 1.0.0.0) compiles but produces a plugin the launcher rejects as "built for SPT 1.0.0", so the build now fails with an explanation instead.
+- Defaulted `SptRoot` so a plain `dotnet build -c Release` works without a local props file; `-p:SptRoot=`, `SPT_ROOT`, and `VeilSight.local.props` still override it.
+- Rewrote the README in Korean, keeping attribution to the original author.
+
 ## 1.0.1 - 2026-07-19
 
 - Fixed cross-extractor compatibility. The 1.0.0 ZIP’s directory entries have zero attributes and omit two parent-directory records.
