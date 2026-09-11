@@ -9,7 +9,7 @@
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <VersionPrefix>1.0.1</VersionPrefix>
+    <VersionPrefix>1.1.0</VersionPrefix>
     <Version>$(VersionPrefix)</Version>
     <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
     <FileVersion>$(VersionPrefix).0</FileVersion>
@@ -21,6 +21,9 @@
 
   <PropertyGroup>
     <SptRoot Condition="'$(SptRoot)' == '' And '$(SPT_ROOT)' != ''">$(SPT_ROOT)</SptRoot>
+    <!-- Fork default: the maintainer's SPT 4.1 install. Override with -p:SptRoot=..., the
+         SPT_ROOT environment variable, or VeilSight.local.props. -->
+    <SptRoot Condition="'$(SptRoot)' == ''">E:\SPT 4.1</SptRoot>
     <DeployVeilSight Condition="'$(DeployVeilSight)' == ''">false</DeployVeilSight>
     <Managed>$(SptRoot)\EscapeFromTarkov_Data\Managed</Managed>
     <BepInExCore>$(SptRoot)\BepInEx\core</BepInExCore>
@@ -73,6 +76,23 @@
   <Target Name="ValidateSptRoot" BeforeTargets="ResolveReferences"
           Condition="'$(SptRoot)' == '' Or !Exists('$(SptRoot)\EscapeFromTarkov_Data\Managed\Assembly-CSharp.dll')">
     <Error Text="Set SptRoot to a valid SPT installation using -p:SptRoot=&quot;C:\Path\To\SPT&quot;, the SPT_ROOT environment variable, or VeilSight.local.props." />
+  </Target>
+
+  <!--
+    The SPT launcher decides which SPT version a plugin was "built for" by reading the version of
+    the spt-reflection assembly it references. Building against a placeholder spt-reflection.dll
+    (version 1.0.0.0) compiles fine but produces a DLL the launcher refuses to run:
+      "These mods were built for a different version of SPT than the one you are running (4.1.5):
+       VeilSight.dll (built for SPT 1.0.0)"
+    So fail the build early rather than shipping a plugin that cannot load.
+  -->
+  <Target Name="EnsureRealSptReflection" AfterTargets="ValidateSptRoot" BeforeTargets="BeforeBuild;ResolveAssemblyReferences">
+    <GetAssemblyIdentity AssemblyFiles="$(SptPlugins)\spt-reflection.dll">
+      <Output TaskParameter="Assemblies" ItemName="_SptReflectionIdentity" />
+    </GetAssemblyIdentity>
+    <Error Condition="'%(_SptReflectionIdentity.Version)' == '1.0.0.0'"
+           Text="spt-reflection.dll under SptRoot '$(SptRoot)' reports version 1.0.0.0, which is a placeholder rather than a real SPT install. A plugin built against it is rejected by the launcher as 'built for SPT 1.0.0'. Point SptRoot at an actual SPT installation." />
+    <Message Text="spt-reflection %(_SptReflectionIdentity.Version) - VeilSight.dll will be stamped for that SPT version." Importance="high" />
   </Target>
 
   <Target Name="GenerateVeilSightVersion" BeforeTargets="CoreCompile">
