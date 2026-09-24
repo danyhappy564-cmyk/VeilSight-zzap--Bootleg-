@@ -20,9 +20,12 @@ namespace VeilSight
         }
 
         private static readonly Dictionary<EnemyInfo, Pending> PendingByPair = new Dictionary<EnemyInfo, Pending>();
+        // Last time each bot actually saw the local player (visibility went through), for re-acquire memory.
+        private static readonly Dictionary<EnemyInfo, float> LastConfirmedByPair = new Dictionary<EnemyInfo, float>();
         private static readonly List<EnemyInfo> CleanupBuffer = new List<EnemyInfo>();
         private static float _nextCleanup;
         private static float _nextBrightLog;
+        private static float _nextBypassLog;
         private static GameWorld _world;
 
         protected override System.Reflection.MethodBase GetTargetMethod()
@@ -54,21 +57,32 @@ namespace VeilSight
                     return true;
                 }
 
+                if (Time.realtimeSinceStartup >= _nextCleanup)
+                    Cleanup();
+
+                string bypass = FindAwarenessBypass(__instance);
+                if (bypass != null)
+                {
+                    PendingByPair.Remove(key);
+                    LogBypass(bypass, __instance.Distance);
+                    return Allow(key);
+                }
+
                 var snapshot = ExposureSampler.Current;
                 float snapshotAge = Time.realtimeSinceStartup - snapshot.SampleTime;
                 float maximumSnapshotAge = Mathf.Max(1f, Mathf.Clamp(ModConfig.SampleInterval.Value, 0.25f, 0.5f) * 3f);
                 if (!snapshot.Valid || snapshot.Band == ExposureBand.Unknown || snapshotAge < 0f || snapshotAge > maximumSnapshotAge)
                 {
                     PendingByPair.Remove(key);
-                    return true;
+                    return Allow(key);
                 }
-                if (Time.realtimeSinceStartup >= _nextCleanup)
-                    Cleanup();
                 if (__instance.Distance <= Mathf.Max(0f, ModConfig.CloseRangeBypass.Value))
                 {
                     PendingByPair.Remove(key);
-                    return true;
+                    return Allow(key);
                 }
+                // A recent shot is applied here as well as in the sampler so the flash counts immediately.
+                snapshot.Band = ExposureSampler.Brighter(snapshot.Band, ShotTracker.MinimumBand());
                 if (snapshot.Band == ExposureBand.Bright)
                 {
                     if (ModConfig.DiagnosticsEnabled.Value && Time.realtimeSinceStartup >= _nextBrightLog)
@@ -77,7 +91,7 @@ namespace VeilSight
                         Plugin.Log.LogInfo($"[VeilSight] VISIBILITY bright-bypass distance={__instance.Distance:0.0} flashlight={snapshot.Flashlight}");
                     }
                     PendingByPair.Remove(key);
-                    return true;
+                    return Allow(key);
                 }
 
                 bool dark = snapshot.Band == ExposureBand.Dark;
@@ -87,6 +101,8 @@ namespace VeilSight
                 required += Mathf.Max(0f, __instance.Distance) *
                     distanceScaling;
                 required = Mathf.Min(required, maximumDelay);
+                if (SainCompat.Loaded)
+                    required *= Mathf.Clamp01(ModConfig.SainDelayMultiplier.Value);
                 if (!PendingByPair.TryGetValue(key, out var pending))
                 {
                     pending = new Pending
@@ -107,7 +123,7 @@ namespace VeilSight
                 {
                     pending.Released = true;
                     LogDecision(key, snapshot, __instance.Distance, required, Time.realtimeSinceStartup - pending.Started, true);
-                    return true;
+                    return Allow(key);
                 }
 
                 LogDecision(key, snapshot, __instance.Distance, required, Time.realtimeSinceStartup - pending.Started, false);
@@ -118,6 +134,33 @@ namespace VeilSight
                 Plugin.Log.LogWarning("[VeilSight] visibility failed open: " + ex.GetType().Name);
                 return true;
             }
+        }
+
+        private static bool Allow(EnemyInfo key)
+        {
+            LastConfirmedByPair[key] = Time.realtimeSinceStartup;
+            return true;
+        }
+
+        /// <summary>
+        /// Reasons a bot should see the local player without any darkness delay, or null if none apply.
+        /// </summary>
+        private static string FindAwarenessBypass(EnemyInfo info)
+        {
+            float memory = ModConfig.ReacquireMemory.Value;
+            if (memory > 0f && LastConfirmedByPair.TryGetValue(info, out float confirmed) &&
+                Time.realtimeSinceStartup - confirmed <= memory)
+                return "memory";
+
+            if (ModConfig.NightVisionBypass.Value && info.Owner.NightVision != null && info.Owner.NightVision.UsingNow)
+                return "night-vision";
+
+            float combat = ModConfig.CombatBypass.Value;
+            if (combat > 0f &&
+                (Time.time - info.LastGetHitTime <= combat || Time.time - info.LastDoHitTime <= combat))
+                return "combat";
+
+            return null;
         }
 
         private static void Cleanup()
@@ -131,13 +174,32 @@ namespace VeilSight
             foreach (var key in CleanupBuffer)
                 PendingByPair.Remove(key);
             CleanupBuffer.Clear();
+
+            float memoryExpiry = Mathf.Max(ModConfig.ReacquireMemory.Value, 0f) + 10f;
+            foreach (var pair in LastConfirmedByPair)
+                if (Time.realtimeSinceStartup - pair.Value > memoryExpiry)
+                    CleanupBuffer.Add(pair.Key);
+            foreach (var key in CleanupBuffer)
+                LastConfirmedByPair.Remove(key);
+            CleanupBuffer.Clear();
+        }
+
+        private static void LogBypass(string reason, float distance)
+        {
+            if (!ModConfig.DiagnosticsEnabled.Value || Time.realtimeSinceStartup < _nextBypassLog)
+                return;
+            _nextBypassLog = Time.realtimeSinceStartup + 1f;
+            Plugin.Log.LogInfo($"[VeilSight] VISIBILITY bypass={reason} distance={distance:0.0}");
         }
 
         internal static void ResetState()
         {
             PendingByPair.Clear();
+            LastConfirmedByPair.Clear();
+            ShotTracker.Reset();
             _nextCleanup = 0f;
             _nextBrightLog = 0f;
+            _nextBypassLog = 0f;
             _world = null;
         }
 
@@ -147,6 +209,7 @@ namespace VeilSight
             if (ReferenceEquals(_world, world))
                 return;
             PendingByPair.Clear();
+            LastConfirmedByPair.Clear();
             _nextCleanup = 0f;
             _world = world;
         }

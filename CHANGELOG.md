@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.2.0 - 2026-09-25 (fork)
+
+- Re-acquire memory: a bot that actually spotted the player skips the delay if it re-sees them within `ReacquireMemory` seconds (default 10), closing the peek-in/peek-out reset.
+- Bots with night vision in use (`BotOwner.NightVision.UsingNow`) are not delayed.
+- Combat bypass: no delay for `CombatBypass` seconds (default 8) after `EnemyInfo.LastGetHitTime` / `LastDoHitTime`.
+- SAIN compatibility: when `me.sol.sain` is loaded, delays are multiplied by `SainDelayMultiplier` (default 0.6) because SAIN applies its own darkness gain-sight modifier.
+- Muzzle flash: postfix on `Player.OnMakingShot` for the local player; unsuppressed shots force BRIGHT and suppressed shots force at least DIM for `MuzzleFlashDuration` (default 1.5 s).
+- Visible lasers (`vis_0*` device modes) raise exposure to at least DIM; IR devices are still ignored.
+- Movement: sprinting adds `MovementWeight` (default 0.10) to exposure, standing still removes half of it.
+- Light rescans use the configurable `LightRefreshInterval` (default 10 s, unchanged); diagnostics log each scan's light count and duration.
+
 ## 1.1.0 - 2026-09-11
 
 - Ported to SPT 4.1.5 (fork).

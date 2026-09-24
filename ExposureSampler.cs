@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Comfort.Common;
 using EFT;
 using EFT.EnvironmentEffect;
@@ -93,7 +94,7 @@ namespace VeilSight
                 {
                     RefreshLights();
                     _initialized = true;
-                    _nextLightRefresh = Time.realtimeSinceStartup + 10f;
+                    _nextLightRefresh = Time.realtimeSinceStartup + Mathf.Clamp(ModConfig.LightRefreshInterval.Value, 5f, 60f);
                 }
 
                 float sunHeight = 0f;
@@ -211,6 +212,16 @@ namespace VeilSight
                         weatherlessHold = true;
                     }
                 }
+                float movement = MovementFactor(player);
+                score = Mathf.Clamp01(score * movement);
+                bool laser = ModConfig.VisibleLaserExposure.Value && EftAccess.IsVisibleLaserActive(player);
+                if (laser)
+                    score = Mathf.Max(score, DimThreshold);
+                var shotBand = ShotTracker.MinimumBand();
+                if (shotBand == ExposureBand.Bright)
+                    score = Mathf.Max(score, BrightThreshold);
+                else if (shotBand == ExposureBand.Dim)
+                    score = Mathf.Max(score, DimThreshold);
                 if (flashlight)
                     score = 1f;
 
@@ -238,7 +249,7 @@ namespace VeilSight
 
                     string environment = environmentManager != null ? environmentManager.Environment.ToString() : "none";
 
-                    Plugin.Log.LogInfo($"[VeilSight] EXPOSURE_RAW location={locationId} score={score:0.000} band={band} daylight={daylight:0.000} ambient={ambient:0.000} direct={direct:0.000} blocked={blocked} local={localLight:0.000} artificial={artificialExposure:0.000} artificialActive={_artificialLightActive} weatherlessHold={weatherlessHold} flashlight={flashlight} pose={pose:0.000} hour={raidHour:0.000} sunY={sunHeight:0.000} cloud={cloudiness:0.000} shValid={shValid} shDC={shDc:0.000000} shTop={shTop:0.000000} environment={environment} sceneSky={sceneSky != null}");
+                    Plugin.Log.LogInfo($"[VeilSight] EXPOSURE_RAW location={locationId} score={score:0.000} band={band} daylight={daylight:0.000} ambient={ambient:0.000} direct={direct:0.000} blocked={blocked} local={localLight:0.000} artificial={artificialExposure:0.000} artificialActive={_artificialLightActive} weatherlessHold={weatherlessHold} flashlight={flashlight} laser={laser} shot={shotBand} movement={movement:0.000} pose={pose:0.000} hour={raidHour:0.000} sunY={sunHeight:0.000} cloud={cloudiness:0.000} shValid={shValid} shDC={shDc:0.000000} shTop={shTop:0.000000} environment={environment} sceneSky={sceneSky != null}");
                 }
             }
             catch (Exception ex)
@@ -273,8 +284,37 @@ namespace VeilSight
             EftAccess.ResetEmitterCache();
         }
 
+        internal static ExposureBand Brighter(ExposureBand a, ExposureBand b)
+        {
+            return Rank(a) >= Rank(b) ? a : b;
+        }
+
+        private static int Rank(ExposureBand band)
+        {
+            switch (band)
+            {
+                case ExposureBand.Bright: return 3;
+                case ExposureBand.Dim: return 2;
+                case ExposureBand.Dark: return 1;
+                default: return 0;
+            }
+        }
+
+        private static float MovementFactor(Player player)
+        {
+            float weight = Mathf.Clamp(ModConfig.MovementWeight.Value, 0f, 0.5f);
+            if (weight <= 0f)
+                return 1f;
+            if (player.IsSprintEnabled)
+                return 1f + weight;
+            Vector3 velocity = player.Velocity;
+            velocity.y = 0f;
+            return velocity.sqrMagnitude < 0.01f ? 1f - weight * 0.5f : 1f;
+        }
+
         private void RefreshLights()
         {
+            var timer = ModConfig.DiagnosticsEnabled.Value ? Stopwatch.StartNew() : null;
             _lights.Clear();
             foreach (var light in UnityEngine.Object.FindObjectsByType<Light>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
             {
@@ -283,6 +323,8 @@ namespace VeilSight
                 if ((light.type == LightType.Point || light.type == LightType.Spot) && light.range > 0f)
                     _lights.Add(light);
             }
+            if (timer != null)
+                Plugin.Log.LogInfo($"[VeilSight] LIGHT_REFRESH lights={_lights.Count} ms={timer.Elapsed.TotalMilliseconds:0.00}");
         }
 
         private float FindStrongestLocalLight(Vector3 head, Transform playerRoot)
