@@ -188,7 +188,8 @@ namespace VeilSight
                 float localLight = FindStrongestLocalLight(head, player.Transform.Original);
                 if (labsLighting)
                     localLight = Mathf.Clamp01(localLight + WeatherlessInteriorLightBaseline);
-                bool flashlight = ModConfig.FlashlightOverride.Value && EftAccess.IsWeaponLightActive(player);
+                var devices = EftAccess.GetActiveDevices(player);
+                bool flashlight = ModConfig.FlashlightOverride.Value && (devices & EftAccess.DeviceMode.WhiteLight) != 0;
                 float poseWeight = Mathf.Clamp01(ModConfig.PoseWeight.Value);
                 float pose = player.IsInPronePose ? 1f - poseWeight :
                     Mathf.Lerp(1f - poseWeight * 0.5f, 1f, Mathf.Clamp01(player.PoseLevel));
@@ -214,7 +215,7 @@ namespace VeilSight
                 }
                 float movement = MovementFactor(player);
                 score = Mathf.Clamp01(score * movement);
-                bool laser = ModConfig.VisibleLaserExposure.Value && EftAccess.IsVisibleLaserActive(player);
+                bool laser = ModConfig.VisibleLaserExposure.Value && (devices & EftAccess.DeviceMode.VisibleLaser) != 0;
                 if (laser)
                     score = Mathf.Max(score, DimThreshold);
                 var shotBand = ShotTracker.MinimumBand();
@@ -249,7 +250,7 @@ namespace VeilSight
 
                     string environment = environmentManager != null ? environmentManager.Environment.ToString() : "none";
 
-                    Plugin.Log.LogInfo($"[VeilSight] EXPOSURE_RAW location={locationId} score={score:0.000} band={band} daylight={daylight:0.000} ambient={ambient:0.000} direct={direct:0.000} blocked={blocked} local={localLight:0.000} artificial={artificialExposure:0.000} artificialActive={_artificialLightActive} weatherlessHold={weatherlessHold} flashlight={flashlight} laser={laser} shot={shotBand} movement={movement:0.000} pose={pose:0.000} hour={raidHour:0.000} sunY={sunHeight:0.000} cloud={cloudiness:0.000} shValid={shValid} shDC={shDc:0.000000} shTop={shTop:0.000000} environment={environment} sceneSky={sceneSky != null}");
+                    Plugin.Log.LogInfo($"[VeilSight] EXPOSURE_RAW location={locationId} score={score:0.000} band={band} daylight={daylight:0.000} ambient={ambient:0.000} direct={direct:0.000} blocked={blocked} local={localLight:0.000} artificial={artificialExposure:0.000} artificialActive={_artificialLightActive} weatherlessHold={weatherlessHold} flashlight={flashlight} laser={laser} devices={devices} shot={shotBand} movement={movement:0.000} pose={pose:0.000} hour={raidHour:0.000} sunY={sunHeight:0.000} cloud={cloudiness:0.000} shValid={shValid} shDC={shDc:0.000000} shTop={shTop:0.000000} environment={environment} sceneSky={sceneSky != null}");
                 }
             }
             catch (Exception ex)
