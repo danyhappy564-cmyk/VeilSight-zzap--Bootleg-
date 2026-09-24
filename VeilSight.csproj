@@ -24,6 +24,8 @@
     <!-- Fork default: the maintainer's SPT 4.1 install. Override with -p:SptRoot=..., the
          SPT_ROOT environment variable, or VeilSight.local.props. -->
     <SptRoot Condition="'$(SptRoot)' == ''">E:\SPT 4.1</SptRoot>
+    <!-- Release builds deploy straight into the SPT install by default (also from Visual Studio). -->
+    <DeployVeilSight Condition="'$(DeployVeilSight)' == '' And '$(Configuration)' == 'Release'">true</DeployVeilSight>
     <DeployVeilSight Condition="'$(DeployVeilSight)' == ''">false</DeployVeilSight>
     <Managed>$(SptRoot)\EscapeFromTarkov_Data\Managed</Managed>
     <BepInExCore>$(SptRoot)\BepInEx\core</BepInExCore>

@@ -16,6 +16,9 @@
 
 ## 변경 이력
 
+- 2026-09-25 03:40 (KST) — 빌드 편의 개선: `VeilSight.sln`(Visual Studio 솔루션 파일)과 더블클릭용 `build.bat` 추가,
+  Release 빌드 시 `BepInEx\plugins\VeilSight`로 자동 복사가 기본값이 됨. Visual Studio에서 csproj를 바로 빌드할 때
+  NuGet 복원이 안 돼서 `NETSDK1004 project.assets.json 없음` 에러가 나던 문제 대응
 - 2026-09-25 02:56 (KST) — **v1.2.0: 봇 인지 규칙 보강 + 기능 추가** (자세한 건 아래 "v1.2.0에서 추가/수정된 것")
   - 숨었다 나왔다를 반복하면 봇이 매번 처음부터 다시 늦게 알아채던 문제 수정 → 한 번 제대로 본 봇은 10초 동안 기억함
   - SAIN이 깔려 있으면 지연을 60%로 줄임 (SAIN도 어둠 은신 계산을 따로 해서 효과가 두 번 걸리던 문제)
@@ -117,16 +120,22 @@ SPT 런처는 플러그인이 참조하는 **`spt-reflection` 어셈블리 버�
 > These mods were built for a different version of SPT than the one you are running (4.1.5):
 > VeilSight.dll (built for SPT 1.0.0)
 
-즉 **남이 빌드해준 DLL을 그냥 받아 쓸 수 없고**, 본인 SPT 설치본에 대고 빌드해야 합니다:
+즉 **남이 빌드해준 DLL을 그냥 받아 쓸 수 없고**, 본인 SPT 설치본에 대고 빌드해야 합니다.
+방법은 셋 중 편한 걸 고르면 됩니다:
 
-```
-dotnet build VeilSight.csproj -c Release
-```
+1. **`build.bat` 더블클릭** — 제일 간단합니다.
+2. **Visual Studio로 `VeilSight.sln` 열기** → 상단 구성을 `Release`로 → `빌드 > 솔루션 빌드`.
+   (csproj를 직접 열어 빌드하면 NuGet 복원이 안 돼서 `NETSDK1004` 에러가 날 수 있습니다 — sln으로 여세요.
+   그래도 나면 `솔루션 탐색기`에서 솔루션 우클릭 → `NuGet 패키지 복원` 한 번 후 다시 빌드)
+3. 명령줄: `dotnet build VeilSight.sln -c Release`
+
+**Release 빌드는 자동으로 `BepInEx\plugins\VeilSight\VeilSight.dll`에 복사**되고,
+`release\VeilSight-버전.zip`도 같이 만들어집니다. 복사를 원치 않으면 `-p:DeployVeilSight=false`.
 
 `SptRoot` 기본값이 `E:\SPT 4.1` 이라 그대로 빌드하면 되고, 경로가 다르면:
 
 ```
-dotnet build VeilSight.csproj -c Release -p:SptRoot="D:\내SPT경로"
+dotnet build VeilSight.sln -c Release -p:SptRoot="D:\내SPT경로"
 ```
 
 빌드 결과물은 `bin\Release\VeilSight.dll` 입니다. 이걸
@@ -135,7 +144,7 @@ dotnet build VeilSight.csproj -c Release -p:SptRoot="D:\내SPT경로"
 BepInEx\plugins\VeilSight\VeilSight.dll
 ```
 
-에 넣으면 됩니다. `-p:DeployVeilSight=true` 를 붙이면 빌드가 알아서 저 위치로 복사합니다.
+에 들어가야 하는데, 위에 적은 대로 Release 빌드면 알아서 복사됩니다.
 
 **서버 모드는 없습니다.** 클라 플러그인 하나가 전부입니다.
 
