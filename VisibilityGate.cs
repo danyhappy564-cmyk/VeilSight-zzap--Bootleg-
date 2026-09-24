@@ -64,7 +64,7 @@ namespace VeilSight
                 if (bypass != null)
                 {
                     PendingByPair.Remove(key);
-                    LogBypass(bypass, __instance.Distance);
+                    LogBypass(bypass, __instance);
                     return Allow(key);
                 }
 
@@ -121,6 +121,8 @@ namespace VeilSight
 
                 if (pending.Released || Time.realtimeSinceStartup - pending.Started >= required)
                 {
+                    if (!pending.Released && ModConfig.DiagnosticsEnabled.Value)
+                        Plugin.Log.LogInfo($"[VeilSight] VISIBILITY released bot={BotName(key)} band={snapshot.Band} distance={__instance.Distance:0.0} required={required:0.00}");
                     pending.Released = true;
                     LogDecision(key, snapshot, __instance.Distance, required, Time.realtimeSinceStartup - pending.Started, true);
                     return Allow(key);
@@ -184,12 +186,17 @@ namespace VeilSight
             CleanupBuffer.Clear();
         }
 
-        private static void LogBypass(string reason, float distance)
+        private static void LogBypass(string reason, EnemyInfo info)
         {
             if (!ModConfig.DiagnosticsEnabled.Value || Time.realtimeSinceStartup < _nextBypassLog)
                 return;
             _nextBypassLog = Time.realtimeSinceStartup + 1f;
-            Plugin.Log.LogInfo($"[VeilSight] VISIBILITY bypass={reason} distance={distance:0.0}");
+            Plugin.Log.LogInfo($"[VeilSight] VISIBILITY bypass={reason} bot={BotName(info)} distance={info.Distance:0.0}");
+        }
+
+        private static string BotName(EnemyInfo info)
+        {
+            return info.Owner != null ? info.Owner.name : "?";
         }
 
         internal static void ResetState()
@@ -219,7 +226,7 @@ namespace VeilSight
             if (!ModConfig.DiagnosticsEnabled.Value || Time.realtimeSinceStartup < PendingByPair[key].LastLog + 1f)
                 return;
             PendingByPair[key].LastLog = Time.realtimeSinceStartup;
-            Plugin.Log.LogInfo($"[VeilSight] VISIBILITY band={snapshot.Band} distance={distance:0.0} required={required:0.00} elapsed={elapsed:0.00} allowed={allowed}");
+            Plugin.Log.LogInfo($"[VeilSight] VISIBILITY bot={BotName(key)} band={snapshot.Band} distance={distance:0.0} required={required:0.00} elapsed={elapsed:0.00} allowed={allowed}");
         }
     }
 }

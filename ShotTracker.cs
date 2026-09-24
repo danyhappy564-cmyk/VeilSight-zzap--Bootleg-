@@ -49,6 +49,9 @@ namespace VeilSight
 
     internal sealed class ShotPatch : ModulePatch
     {
+        private static float _nextShotLog;
+        private static int _shotsSinceLog;
+
         protected override MethodBase GetTargetMethod()
         {
             return AccessTools.Method(typeof(Player), nameof(Player.OnMakingShot));
@@ -64,7 +67,16 @@ namespace VeilSight
                 bool silenced = __instance.HandsController is Player.FirearmController firearm && firearm.IsSilenced;
                 ShotTracker.Record(silenced);
                 if (ModConfig.DiagnosticsEnabled.Value)
-                    Plugin.Log.LogInfo($"[VeilSight] SHOT silenced={silenced}");
+                {
+                    // Full-auto fire would log every round; summarize at most once a second.
+                    _shotsSinceLog++;
+                    if (Time.realtimeSinceStartup >= _nextShotLog)
+                    {
+                        _nextShotLog = Time.realtimeSinceStartup + 1f;
+                        Plugin.Log.LogInfo($"[VeilSight] SHOT silenced={silenced} shots={_shotsSinceLog}");
+                        _shotsSinceLog = 0;
+                    }
+                }
             }
             catch (Exception ex)
             {

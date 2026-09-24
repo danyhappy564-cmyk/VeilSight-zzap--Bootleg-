@@ -9,7 +9,7 @@
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <VersionPrefix>1.2.0</VersionPrefix>
+    <VersionPrefix>1.2.1</VersionPrefix>
     <Version>$(VersionPrefix)</Version>
     <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
     <FileVersion>$(VersionPrefix).0</FileVersion>

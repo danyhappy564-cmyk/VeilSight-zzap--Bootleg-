@@ -16,6 +16,12 @@
 
 ## 변경 이력
 
+- 2026-09-25 03:31 (KST) — **v1.2.1: 첫 실전 로그 반영 (Woods 야간)** — 기능 변화 없음, 진단 로그만 정리
+  - 확인됨: SAIN 감지 + 지연 0.6배 적용(최대 4.00→2.40초), 사격 시 BRIGHT, 달리기/정지 노출 가감, 재발견 기억 작동, 예외 0건
+  - 조명 검색은 400~490개에 0.2ms — 끊김 걱정은 근거 없음으로 확인
+  - 자동 사격 때 `SHOT` 로그가 한 발마다 찍히던 것(한 판에 361줄)을 1초에 한 줄 요약으로 줄임
+  - 판정 로그에 봇 이름(`bot=`)을 붙이고, 지연이 끝나서 봇이 나를 발견한 순간을 `VISIBILITY released`로 따로 남김
+    (전에는 발견 직후가 `bypass=memory`로만 찍혀서 구분이 안 됐음)
 - 2026-09-25 03:40 (KST) — 빌드 편의 개선: `VeilSight.sln`(Visual Studio 솔루션 파일)과 더블클릭용 `build.bat` 추가,
   Release 빌드 시 `BepInEx\plugins\VeilSight`로 자동 복사가 기본값이 됨. Visual Studio에서 csproj를 바로 빌드할 때
   NuGet 복원이 안 돼서 `NETSDK1004 project.assets.json 없음` 에러가 나던 문제 대응
