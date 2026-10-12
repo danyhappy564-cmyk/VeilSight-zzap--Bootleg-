@@ -1,10 +1,10 @@
 ### ⚠️ IMPORTANT NOTICE / DISCLAIMER
 
-**Original Author:** Sherrifpowpow
-**Original Repository:** VeilSight
-**Original Link:** https://github.com/Sherrifpowpow/VeilSight
-**License:** MIT
-**This Port By:** R_F (danyhappy564-cmyk) — unofficial, AI-assisted port. Not affiliated with or endorsed by the original author.
+- **Original Author:** Sherrifpowpow
+- **Original Repository:** VeilSight
+- **Original Link:** https://github.com/Sherrifpowpow/VeilSight
+- **License:** MIT
+- **This Port By:** R_F (danyhappy564-cmyk) — unofficial, AI-assisted port. Not affiliated with or endorsed by the original author.
 
 1. **Reflection & Take-Downs:** I deeply reflect on the ECOT incident. As an AI-assisted "vibe coder," I will immediately delete files if the original authors ask.
 2. **No Re-Distribution:** These ported builds are unverified, temporary fixes. Please do NOT re-upload or share them anywhere else.
@@ -16,6 +16,7 @@
 
 ## 변경 이력
 
+- 2026-10-13 04:38 — README 맨 위 원작자 표기를 한 줄씩 나눠 보기 쉽게 정리 (내용 변화 없음)
 - 2026-09-25 04:41 (KST) — v1.2.2 실전 확인 (세관 19~20시): 손전등 → BRIGHT, 가시광 레이저만 → DIM, IR 라이트/IR 레이저 → 밝기 변화 없음,
   전부 끔 → 원래 밝기. 모드 7가지 조합이 전부 정확히 구분됨 (코드 변경 없음)
 - 2026-09-25 04:24 (KST) — **v1.2.2: 손전등/레이저 판정 방식 변경** (두 번째 실전 로그, 세관·팩토리 야간)
